@@ -248,9 +248,13 @@ jobs:
           command: doc
           args: --no-deps --document-private-items --all-features
 
-  unused-dependencies:
+  track-dependencies:
     needs: clippy
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v2
       - name: Install rust
@@ -277,6 +281,10 @@ jobs:
         with:
           command: udeps
           args: --workspace --all-targets
+      - uses: tweedegolf/cargo-dependencies-action
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          mainBranchName: main
 
   audit:
     needs: clippy

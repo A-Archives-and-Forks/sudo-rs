@@ -134,7 +134,7 @@ impl Container {
         docker_exec
     }
 
-    pub fn cp_many<'a>(&self, files: impl Iterator<Item = (&'a String, &'a TextFile)>) {
+    pub fn cp_many<'a>(&self, files: impl IntoIterator<Item = (&'a String, &'a TextFile)>) {
         let mut builder = tar::Builder::new(vec![]);
         let mut file_chown = vec![];
 
@@ -403,7 +403,7 @@ mod tests {
 
         let docker = Container::new(IMAGE);
 
-        docker.cp_many(Some((&path.to_owned(), &expected)).into_iter());
+        docker.cp_many([(&path.to_owned(), &expected)]);
 
         let actual = docker.output(Command::new("cat").arg(path)).stdout();
         assert_eq!(expected.contents, actual);

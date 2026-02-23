@@ -92,7 +92,8 @@ impl Container {
 
     #[track_caller]
     pub fn output(&self, cmd: &Command) -> Output {
-        run(&mut self.docker_exec(cmd), cmd.get_stdin())
+        let stdin = cmd.get_stdin().map(str::as_bytes);
+        run(&mut self.docker_exec(cmd), stdin)
     }
 
     #[track_caller]
@@ -268,11 +269,11 @@ fn repo_root() -> PathBuf {
 }
 
 #[track_caller]
-fn run(cmd: &mut StdCommand, stdin: Option<&str>) -> Output {
+fn run(cmd: &mut StdCommand, stdin: Option<&[u8]>) -> Output {
     let res = (|| -> Result<Output> {
         if let Some(stdin) = stdin {
             let mut temp_file = tempfile::tempfile()?;
-            temp_file.write_all(stdin.as_bytes())?;
+            temp_file.write_all(stdin)?;
             temp_file.seek(SeekFrom::Start(0))?;
             cmd.stdin(Stdio::from(temp_file));
         }

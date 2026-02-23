@@ -18,15 +18,6 @@ impl<'a> CharStream<'a> {
         Self::new_with_pos(src, (1, 1))
     }
 
-    /// Advance the stream `n` horizontal steps; this trusts the caller to have verified that no
-    /// newline occurs.
-    pub fn advance(&mut self, n: usize) {
-        (&mut self.iter).take(n).count();
-        self.col += n;
-    }
-}
-
-impl CharStream<'_> {
     pub fn next_if(&mut self, f: impl FnOnce(char) -> bool) -> Option<char> {
         let item = self.iter.next_if(|&c| f(c));
         match item {
@@ -54,6 +45,12 @@ impl CharStream<'_> {
 
     pub fn get_pos(&self) -> (usize, usize) {
         (self.line, self.col)
+    }
+
+    pub fn advance(&mut self, n: usize) {
+        for _ in 0..n {
+            self.next_if(|_| true);
+        }
     }
 }
 

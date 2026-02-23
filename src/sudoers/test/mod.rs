@@ -543,6 +543,15 @@ fn gh1295_escaped_equal_argument_ok() {
 }
 
 #[test]
+fn gh1466_hostname_cannot_be_ip() {
+    assert!(try_parse_line("ALL 192.168.0.foo=ALL").is_some());
+    assert!(try_parse_line("ALL 1ba.168.0.0=ALL").is_some());
+    assert!(try_parse_line("ALL 192.168.0.1.5=ALL").is_some());
+    assert!(try_parse_line("ALL 192.1682.0.1=ALL").is_some());
+    assert!(try_parse_line("ALL 192.168.0.1=ALL").is_none());
+}
+
+#[test]
 fn hashsign_error() {
     assert!(parse_line("#include foo bar").is_line_comment());
 }

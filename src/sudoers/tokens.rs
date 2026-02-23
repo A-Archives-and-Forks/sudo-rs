@@ -81,6 +81,17 @@ impl std::ops::Deref for Hostname {
 
 impl Token for Hostname {
     fn construct(text: String) -> Result<Self, String> {
+        // reject hostnames that resemble IPv4 addresses too closely
+        // (IPv6 addresses will already be reject since ':' is not in the accept-set)
+        let mut chunks = text.rsplitn(5, '.');
+        if (&mut chunks)
+            .take(4)
+            .all(|part| !part.is_empty() && part.len() <= 3 && part.chars().all(char::is_numeric))
+            && chunks.next().is_none()
+        {
+            return Err("hosts cannot be specified using an IPv4 address".to_string());
+        }
+
         Ok(Hostname(text))
     }
 

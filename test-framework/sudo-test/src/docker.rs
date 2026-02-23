@@ -1,15 +1,13 @@
-use core::str;
 use std::{
     env::{self, consts::OS},
     fs::{self, File},
     io::{ErrorKind, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
     process::{self, Command as StdCommand, Stdio},
+    str,
 };
 
-use tempfile::NamedTempFile;
-
-use crate::{Result, SudoUnderTest, base_image};
+use crate::{ROOT_GROUP, Result, SudoUnderTest, TextFile, base_image};
 
 pub use self::command::{As, Child, Command, Output};
 
@@ -92,7 +90,8 @@ impl Container {
 
     #[track_caller]
     pub fn output(&self, cmd: &Command) -> Output {
-        run(&mut self.docker_exec(cmd), cmd.get_stdin())
+        let stdin = cmd.get_stdin().map(str::as_bytes);
+        run(&mut self.docker_exec(cmd), stdin)
     }
 
     #[track_caller]
@@ -135,14 +134,48 @@ impl Container {
         docker_exec
     }
 
-    pub fn cp(&self, path_in_container: &str, file_contents: &str) {
-        let mut temp_file = NamedTempFile::new().unwrap();
-        fs::write(&mut temp_file, file_contents).unwrap();
+    pub fn cp_many<'a>(&self, files: impl IntoIterator<Item = (&'a String, &'a TextFile)>) {
+        let mut builder = tar::Builder::new(vec![]);
+        let mut file_chown = vec![];
 
-        let src_path = temp_file.path().display().to_string();
-        let dest_path = format!("{}:{path_in_container}", self.id);
+        for (path, file) in files {
+            let contents = file.content_bytes();
 
-        run(docker_command().args(["cp", &src_path, &dest_path]), None).assert_success();
+            let mut header = tar::Header::new_gnu();
+            header.set_size(contents.len() as u64);
+            header.set_cksum();
+            if file.chown == format!("root:{ROOT_GROUP}") {
+                // Fast path when we know the uid/gid
+                header.set_uid(0);
+                header.set_gid(0);
+            } else {
+                // Unfortunately docker cp doesn't support named users and groups in tarballs,
+                // so we have to run chown inside the container below.
+                file_chown.push((path, &file.chown));
+            }
+            header.set_mode(u32::from_str_radix(&file.chmod, 8).unwrap());
+
+            builder
+                .append_data(
+                    &mut header,
+                    Path::new(path).strip_prefix("/").unwrap(),
+                    &*contents,
+                )
+                .unwrap();
+        }
+
+        let tarball = builder.into_inner().unwrap();
+
+        run(
+            docker_command().args(["cp", "--archive", "-", &format!("{}:/", self.id)]),
+            Some(&tarball),
+        )
+        .assert_success();
+
+        for (path, chown) in file_chown {
+            self.output(Command::new("chown").args([chown, path]))
+                .assert_success();
+        }
     }
 
     fn copy_profraw_data(&mut self, profraw_dir: impl AsRef<Path>) {
@@ -268,11 +301,11 @@ fn repo_root() -> PathBuf {
 }
 
 #[track_caller]
-fn run(cmd: &mut StdCommand, stdin: Option<&str>) -> Output {
+fn run(cmd: &mut StdCommand, stdin: Option<&[u8]>) -> Output {
     let res = (|| -> Result<Output> {
         if let Some(stdin) = stdin {
             let mut temp_file = tempfile::tempfile()?;
-            temp_file.write_all(stdin.as_bytes())?;
+            temp_file.write_all(stdin)?;
             temp_file.seek(SeekFrom::Start(0))?;
             cmd.stdin(Stdio::from(temp_file));
         }
@@ -366,14 +399,14 @@ mod tests {
     #[test]
     fn cp_works() {
         let path = "/tmp/file";
-        let expected = "Hello, world!";
+        let expected = TextFile("Hello, world!");
 
         let docker = Container::new(IMAGE);
 
-        docker.cp(path, expected);
+        docker.cp_many([(&path.to_owned(), &expected)]);
 
         let actual = docker.output(Command::new("cat").arg(path)).stdout();
-        assert_eq!(expected, actual);
+        assert_eq!(expected.contents, actual);
     }
 
     #[test]

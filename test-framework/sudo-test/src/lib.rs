@@ -433,13 +433,7 @@ impl EnvBuilder {
             directory.create(&container);
         }
 
-        for (path, file) in &self.default_files {
-            file.create(path, &container);
-        }
-
-        for (path, file) in &self.files {
-            file.create(path, &container);
-        }
+        container.cp_many(self.default_files.iter().chain(&self.files));
 
         let env = Env {
             container,
@@ -748,7 +742,7 @@ impl TextFile {
         self
     }
 
-    fn create(&self, path: &str, container: &Container) {
+    fn content_bytes(&self) -> Vec<u8> {
         let mut contents = self.contents.clone();
 
         if self.trailing_newline {
@@ -759,14 +753,7 @@ impl TextFile {
             contents.pop();
         }
 
-        container.cp(path, &contents);
-
-        container
-            .output(Command::new("chown").args([&self.chown, path]))
-            .assert_success();
-        container
-            .output(Command::new("chmod").args([&self.chmod, path]))
-            .assert_success();
+        contents.into_bytes()
     }
 }
 

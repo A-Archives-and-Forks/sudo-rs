@@ -1,13 +1,13 @@
-use core::str;
 use std::{
     env::{self, consts::OS},
     fs::{self, File},
     io::{ErrorKind, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
     process::{self, Command as StdCommand, Stdio},
+    str,
 };
 
-use crate::{Result, SudoUnderTest, TextFile, base_image};
+use crate::{ROOT_GROUP, Result, SudoUnderTest, TextFile, base_image};
 
 pub use self::command::{As, Child, Command, Output};
 
@@ -144,9 +144,15 @@ impl Container {
             let mut header = tar::Header::new_gnu();
             header.set_size(contents.len() as u64);
             header.set_cksum();
-            // Unfortunately docker cp doesn't support named users and groups in tarballs,
-            // so we have to run chown inside the container below.
-            file_chown.push((path, &file.chown));
+            if file.chown == format!("root:{ROOT_GROUP}") {
+                // Fast path when we know the uid/gid
+                header.set_uid(0);
+                header.set_gid(0);
+            } else {
+                // Unfortunately docker cp doesn't support named users and groups in tarballs,
+                // so we have to run chown inside the container below.
+                file_chown.push((path, &file.chown));
+            }
             header.set_mode(u32::from_str_radix(&file.chmod, 8).unwrap());
 
             builder

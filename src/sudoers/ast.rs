@@ -464,6 +464,25 @@ impl Parse for (Option<RunAs>, CommandSpec) {
 /// "runas" specifier (which has to be placed correctly during the AST analysis phase)
 impl Many for (Option<RunAs>, CommandSpec) {}
 
+/// Directives such as "Defaults" and "HostAlias" also could be parsed as part of a
+/// UserSpecifier list. We need to detect to give a parse error in cases where the syntax
+/// seems to suggest they are used in that manner.
+/// Technically, "Defaults@host" is also a valid username, but the logic can disambiguate
+/// those cases clearly. E.g. "Defaults@host1,host2 secure_path=/bin/sh" is technically
+/// ambiguous but it can be parsed. Time flies like an arrow, fruit flies like a banana.
+impl Directive {
+    fn could_be_username(&self) -> bool {
+        matches!(
+            self,
+            Self::Defaults(_, ConfigScope::Generic)
+                | Self::UserAlias(_)
+                | Self::HostAlias(_)
+                | Self::CmndAlias(_)
+                | Self::RunasAlias(_)
+        )
+    }
+}
+
 /// grammar:
 /// ```text
 /// sudo = permissionspec
@@ -519,8 +538,9 @@ impl Parse for Sudo {
             let key = &users[0];
             let start_pos = start_state.get_pos();
             if let Some(directive) = maybe(get_directive(key, stream, start_state))? {
-                if users.len() != 1 {
-                    unrecoverable!(pos = start_pos, stream, "invalid user name list");
+                if users.len() != 1 && directive.could_be_username() {
+                    // this is here to guard against User_Alias,foo ALIAS=def being accepted
+                    unrecoverable!(pos = start_pos, stream, "ambiguous syntax");
                 }
                 make(Sudo::Decl(directive))
             } else {

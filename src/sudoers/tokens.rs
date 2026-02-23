@@ -1,6 +1,7 @@
 //! Various tokens
 
 use crate::common::{SudoPath, SudoString};
+use std::ffi::OsString;
 
 use super::basic_parser::{Many, Token};
 use crate::common::{HARDENED_ENUM_VALUE_0, HARDENED_ENUM_VALUE_1, HARDENED_ENUM_VALUE_2};
@@ -157,7 +158,6 @@ impl Token for AliasName {
 
 /// A struct that represents valid command strings; this can contain escape sequences and are
 /// limited to 1024 characters.
-use std::ffi::OsString;
 #[derive(PartialEq)]
 #[repr(u32)]
 pub enum Args {

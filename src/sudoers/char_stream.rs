@@ -1,12 +1,8 @@
+#[derive(Clone)]
 pub struct CharStream<'a> {
     iter: std::iter::Peekable<std::str::Chars<'a>>,
     line: usize,
     col: usize,
-}
-
-/// Advance the given position by `n` horizontal steps
-pub fn advance(pos: (usize, usize), n: usize) -> (usize, usize) {
-    (pos.0, pos.1 + n)
 }
 
 impl<'a> CharStream<'a> {
@@ -20,6 +16,13 @@ impl<'a> CharStream<'a> {
 
     pub fn new(src: &'a str) -> Self {
         Self::new_with_pos(src, (1, 1))
+    }
+
+    /// Advance the stream `n` horizontal steps; this trusts the caller to have verified that no
+    /// newline occurs.
+    pub fn advance(&mut self, n: usize) {
+        (&mut self.iter).take(n).count();
+        self.col += n;
     }
 }
 

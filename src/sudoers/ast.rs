@@ -1,6 +1,5 @@
 use super::ast_names::UserFriendly;
 use super::basic_parser::*;
-use super::char_stream::advance;
 use super::tokens::*;
 use crate::common::SudoString;
 use crate::common::{
@@ -508,7 +507,7 @@ impl Parse for Sudo {
             };
         }
 
-        let start_pos = stream.get_pos();
+        let start_state = stream.clone();
         if stream.peek() == Some('"') {
             // a quoted userlist follows; this forces us to read a userlist
             let users = expect_nonterminal(stream)?;
@@ -518,7 +517,8 @@ impl Parse for Sudo {
             // this could be the start of a Defaults or Alias definition, so distinguish.
             // element 1 always exists (parse_list fails on an empty list)
             let key = &users[0];
-            if let Some(directive) = maybe(get_directive(key, stream, start_pos))? {
+            let start_pos = start_state.get_pos();
+            if let Some(directive) = maybe(get_directive(key, stream, start_state))? {
                 if users.len() != 1 {
                     unrecoverable!(pos = start_pos, stream, "invalid user name list");
                 }
@@ -613,10 +613,10 @@ impl<T> Many for Def<T> {
 // I.e. after a valid username has been parsed, we check if it isn't actually a valid start of a
 // directive. A more robust solution would be to use the approach taken by the `MetaOrTag` above.
 
-fn get_directive(
+fn get_directive<'a>(
     perhaps_keyword: &Spec<UserSpecifier>,
-    stream: &mut CharStream,
-    begin_pos: (usize, usize),
+    stream: &mut CharStream<'a>,
+    begin_state: CharStream<'a>,
 ) -> Parsed<Directive> {
     use super::ast::Directive::*;
     use super::ast::Meta::*;
@@ -625,6 +625,8 @@ fn get_directive(
     let Allow(Only(User(Identifier::Name(keyword)))) = perhaps_keyword else {
         return reject();
     };
+
+    let begin_pos = begin_state.get_pos();
 
     match keyword.as_str() {
         "User_Alias" => make(UserAlias(expect_nonterminal(stream)?)),
@@ -645,12 +647,11 @@ fn get_directive(
 
             let scope = if allow_scope_modifier {
                 if keyword[DEFAULTS_LEN..].starts_with('@') {
-                    let inner_stream = &mut CharStream::new_with_pos(
-                        &keyword[DEFAULTS_LEN + 1..],
-                        advance(begin_pos, DEFAULTS_LEN + 1),
-                    );
+                    //Backtrack and start parsing following the '@' sign
+                    *stream = begin_state;
+                    stream.advance(DEFAULTS_LEN + 1);
 
-                    ConfigScope::Host(expect_nonterminal(inner_stream)?)
+                    ConfigScope::Host(expect_nonterminal(stream)?)
                 } else if is_syntax(':', stream)? {
                     ConfigScope::User(expect_nonterminal(stream)?)
                 } else if is_syntax('!', stream)? {

@@ -8,6 +8,7 @@ rust-version.workspace = true
 doctest = false
 
 [dependencies]
+tar = { version = "0.4", default-features = false }
 tempfile = "3.4.0"
 
 [features]

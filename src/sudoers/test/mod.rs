@@ -577,6 +577,8 @@ fn specific_defaults() {
     assert!(try_parse_line("Defaults !/bin/bash").is_none());
     assert!(parse_line("Defaults@host !use_pty").is_decl());
     assert!(parse_line("Defaults@host!use_pty").is_decl());
+    assert!(parse_line("Defaults@host,!host2 !use_pty").is_decl());
+    assert!(parse_line("Defaults@!host,host2!use_pty").is_decl());
     assert!(try_parse_line("Defaults @host!use_pty").is_none());
     assert!(try_parse_line("Defaults @host !use_pty").is_none());
     assert!(parse_line("Defaults:user !use_pty").is_decl());

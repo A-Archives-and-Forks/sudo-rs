@@ -1,6 +1,5 @@
 use super::ast_names::UserFriendly;
 use super::basic_parser::*;
-use super::char_stream::advance;
 use super::tokens::*;
 use crate::common::SudoString;
 use crate::common::{
@@ -465,6 +464,25 @@ impl Parse for (Option<RunAs>, CommandSpec) {
 /// "runas" specifier (which has to be placed correctly during the AST analysis phase)
 impl Many for (Option<RunAs>, CommandSpec) {}
 
+/// Directives such as "Defaults" and "HostAlias" also could be parsed as part of a
+/// UserSpecifier list. We need to detect to give a parse error in cases where the syntax
+/// seems to suggest they are used in that manner.
+/// Technically, "Defaults@host" is also a valid username, but the logic can disambiguate
+/// those cases clearly. E.g. "Defaults@host1,host2 secure_path=/bin/sh" is technically
+/// ambiguous but it can be parsed. Time flies like an arrow, fruit flies like a banana.
+impl Directive {
+    fn could_be_username(&self) -> bool {
+        matches!(
+            self,
+            Self::Defaults(_, ConfigScope::Generic)
+                | Self::UserAlias(_)
+                | Self::HostAlias(_)
+                | Self::CmndAlias(_)
+                | Self::RunasAlias(_)
+        )
+    }
+}
+
 /// grammar:
 /// ```text
 /// sudo = permissionspec
@@ -508,7 +526,7 @@ impl Parse for Sudo {
             };
         }
 
-        let start_pos = stream.get_pos();
+        let start_state = stream.clone();
         if stream.peek() == Some('"') {
             // a quoted userlist follows; this forces us to read a userlist
             let users = expect_nonterminal(stream)?;
@@ -518,9 +536,11 @@ impl Parse for Sudo {
             // this could be the start of a Defaults or Alias definition, so distinguish.
             // element 1 always exists (parse_list fails on an empty list)
             let key = &users[0];
-            if let Some(directive) = maybe(get_directive(key, stream, start_pos))? {
-                if users.len() != 1 {
-                    unrecoverable!(pos = start_pos, stream, "invalid user name list");
+            let start_pos = start_state.get_pos();
+            if let Some(directive) = maybe(get_directive(key, stream, start_state))? {
+                if users.len() != 1 && directive.could_be_username() {
+                    // this is here to guard against User_Alias,foo ALIAS=def being accepted
+                    unrecoverable!(pos = start_pos, stream, "ambiguous syntax");
                 }
                 make(Sudo::Decl(directive))
             } else {
@@ -613,10 +633,10 @@ impl<T> Many for Def<T> {
 // I.e. after a valid username has been parsed, we check if it isn't actually a valid start of a
 // directive. A more robust solution would be to use the approach taken by the `MetaOrTag` above.
 
-fn get_directive(
+fn get_directive<'a>(
     perhaps_keyword: &Spec<UserSpecifier>,
-    stream: &mut CharStream,
-    begin_pos: (usize, usize),
+    stream: &mut CharStream<'a>,
+    begin_state: CharStream<'a>,
 ) -> Parsed<Directive> {
     use super::ast::Directive::*;
     use super::ast::Meta::*;
@@ -626,18 +646,20 @@ fn get_directive(
         return reject();
     };
 
+    let begin_pos = begin_state.get_pos();
+
     match keyword.as_str() {
         "User_Alias" => make(UserAlias(expect_nonterminal(stream)?)),
         "Host_Alias" => make(HostAlias(expect_nonterminal(stream)?)),
         "Cmnd_Alias" | "Cmd_Alias" => make(CmndAlias(expect_nonterminal(stream)?)),
         "Runas_Alias" => make(RunasAlias(expect_nonterminal(stream)?)),
         _ if keyword.starts_with("Defaults") => {
-            //HACK #1: no space is allowed between "Defaults" and '!>@:'. The below avoids having to
-            //add "Defaults!" etc as separate tokens; but relying on positional information during
-            //parsing is of course, cheating.
-            //HACK #2: '@' can be part of a username, so it will already have been parsed;
-            //an acceptable hostname is subset of an acceptable username, so that's actually OK.
-            //This resolves an ambiguity in the grammar similarly to how MetaOrTag does that.
+            // HACK #1: no space is allowed between "Defaults" and '!>@:'. The below avoids having to
+            // add "Defaults!" etc as separate tokens; but relying on positional information during
+            // parsing is of course, cheating.
+            // HACK #2: '@' can be part of a username, so it will already have been parsed;
+            // an acceptable hostname is subset of an acceptable username, so that's actually OK.
+            // This resolves an ambiguity in the grammar similarly to how MetaOrTag does that.
             const DEFAULTS_LEN: usize = "Defaults".len();
             let allow_scope_modifier = stream.get_pos().0 == begin_pos.0
                 && (stream.get_pos().1 - begin_pos.1 == DEFAULTS_LEN
@@ -645,12 +667,11 @@ fn get_directive(
 
             let scope = if allow_scope_modifier {
                 if keyword[DEFAULTS_LEN..].starts_with('@') {
-                    let inner_stream = &mut CharStream::new_with_pos(
-                        &keyword[DEFAULTS_LEN + 1..],
-                        advance(begin_pos, DEFAULTS_LEN + 1),
-                    );
+                    // Backtrack and start parsing following the '@' sign
+                    *stream = begin_state;
+                    stream.advance(DEFAULTS_LEN + 1);
 
-                    ConfigScope::Host(expect_nonterminal(inner_stream)?)
+                    ConfigScope::Host(expect_nonterminal(stream)?)
                 } else if is_syntax(':', stream)? {
                     ConfigScope::User(expect_nonterminal(stream)?)
                 } else if is_syntax('!', stream)? {

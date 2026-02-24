@@ -1,12 +1,8 @@
+#[derive(Clone)]
 pub struct CharStream<'a> {
     iter: std::iter::Peekable<std::str::Chars<'a>>,
     line: usize,
     col: usize,
-}
-
-/// Advance the given position by `n` horizontal steps
-pub fn advance(pos: (usize, usize), n: usize) -> (usize, usize) {
-    (pos.0, pos.1 + n)
 }
 
 impl<'a> CharStream<'a> {
@@ -21,9 +17,7 @@ impl<'a> CharStream<'a> {
     pub fn new(src: &'a str) -> Self {
         Self::new_with_pos(src, (1, 1))
     }
-}
 
-impl CharStream<'_> {
     pub fn next_if(&mut self, f: impl FnOnce(char) -> bool) -> Option<char> {
         let item = self.iter.next_if(|&c| f(c));
         match item {
@@ -51,6 +45,12 @@ impl CharStream<'_> {
 
     pub fn get_pos(&self) -> (usize, usize) {
         (self.line, self.col)
+    }
+
+    pub fn advance(&mut self, n: usize) {
+        for _ in 0..n {
+            self.next_if(|_| true);
+        }
     }
 }
 

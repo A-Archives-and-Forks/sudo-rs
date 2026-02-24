@@ -549,6 +549,9 @@ fn gh1466_hostname_cannot_be_ip() {
     assert!(try_parse_line("ALL 192.168.0.1.5=ALL").is_some());
     assert!(try_parse_line("ALL 192.1682.0.1=ALL").is_some());
     assert!(try_parse_line("ALL 192.168.0.1=ALL").is_none());
+    assert!(try_parse_line("ALL 192.168.0=ALL").is_none());
+    assert!(try_parse_line("ALL 192.168=ALL").is_none());
+    assert!(try_parse_line("ALL 192=ALL").is_none());
 }
 
 #[test]

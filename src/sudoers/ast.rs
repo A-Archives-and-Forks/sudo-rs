@@ -654,12 +654,12 @@ fn get_directive<'a>(
         "Cmnd_Alias" | "Cmd_Alias" => make(CmndAlias(expect_nonterminal(stream)?)),
         "Runas_Alias" => make(RunasAlias(expect_nonterminal(stream)?)),
         _ if keyword.starts_with("Defaults") => {
-            //HACK #1: no space is allowed between "Defaults" and '!>@:'. The below avoids having to
-            //add "Defaults!" etc as separate tokens; but relying on positional information during
-            //parsing is of course, cheating.
-            //HACK #2: '@' can be part of a username, so it will already have been parsed;
-            //an acceptable hostname is subset of an acceptable username, so that's actually OK.
-            //This resolves an ambiguity in the grammar similarly to how MetaOrTag does that.
+            // HACK #1: no space is allowed between "Defaults" and '!>@:'. The below avoids having to
+            // add "Defaults!" etc as separate tokens; but relying on positional information during
+            // parsing is of course, cheating.
+            // HACK #2: '@' can be part of a username, so it will already have been parsed;
+            // an acceptable hostname is subset of an acceptable username, so that's actually OK.
+            // This resolves an ambiguity in the grammar similarly to how MetaOrTag does that.
             const DEFAULTS_LEN: usize = "Defaults".len();
             let allow_scope_modifier = stream.get_pos().0 == begin_pos.0
                 && (stream.get_pos().1 - begin_pos.1 == DEFAULTS_LEN
@@ -667,7 +667,7 @@ fn get_directive<'a>(
 
             let scope = if allow_scope_modifier {
                 if keyword[DEFAULTS_LEN..].starts_with('@') {
-                    //Backtrack and start parsing following the '@' sign
+                    // Backtrack and start parsing following the '@' sign
                     *stream = begin_state;
                     stream.advance(DEFAULTS_LEN + 1);
 

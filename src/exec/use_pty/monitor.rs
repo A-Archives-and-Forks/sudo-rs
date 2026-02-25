@@ -142,7 +142,7 @@ pub(super) fn exec_monitor(
     if foreground {
         if let Err(err) = closure.pty_follower.tcsetpgrp(closure.command_pgrp) {
             dev_error!(
-                "cannot set foreground progess group to {} (command): {err}",
+                "cannot set foreground process group to {} (command): {err}",
                 closure.command_pgrp
             );
         }
@@ -174,7 +174,7 @@ pub(super) fn exec_monitor(
         );
     }
 
-    // Disable nonblocking assetions as we will not poll the backchannel anymore.
+    // Disable nonblocking assertions as we will not poll the backchannel anymore.
     closure.backchannel.set_nonblocking_assertions(false);
 
     match reason {

@@ -20,7 +20,7 @@ We don't either!
 
 "sudo-rs" is the name of the project, which aims to provide an implementation of the `sudo` command written in Rust. End-users shouldn't *need* to be concerned about what programming language their tools are written in (although there is nothing wrong with taking an interest, of course!). Ideally, your Linux distribution will allow you to easily switch between `sudo` implementations, just as easily as you can switch between `vi` or `awk` implementations.
 
-But because for such a long time, `sudo` has been considered a core utility, Linux distributions are still catching up---the amount of work that they have to do to accomodate having multiple sudo options shouldn't be underestimated. And so for the initial versions, many have chosen to rename the command "sudo-rs" to avoid a packaging problem.
+But because for such a long time, `sudo` has been considered a core utility, Linux distributions are still catching up---the amount of work that they have to do to accommodate having multiple sudo options shouldn't be underestimated. And so for the initial versions, many have chosen to rename the command "sudo-rs" to avoid a packaging problem.
 
 If you are annoyed by this, do let your voice be heard to the maintainers of the sudo-rs package for your distribution! And be patient---maintaining packages for Linux distributions is largely a volunteer job, and since sudo-rs is a new tool it's only logical that distributions take a conservative approach.
 
@@ -126,7 +126,7 @@ This is not say that *you* should not use OpenDoas. TTY hijacking attack might n
 
 Run0 is a tool added to systemd in version 256 which serves a similar purpose to sudo/sudo-rs. Its main aim is to offer controlled privilege escalation without requiring the SUID flag on binaries, by merely functioning as a convenient interface to functionality that was already present in systemd. It is controlled by a security policy implemented through polkit.
 
-Having had the experience of writing a SUID program, we can definitely say that we see advantages to that approach. Since systemd is a security-critical component anway, there is something to be said to let it handle privilege escalation as well.
+Having had the experience of writing a SUID program, we can definitely say that we see advantages to that approach. Since systemd is a security-critical component anyway, there is something to be said to let it handle privilege escalation as well.
 
 However, there are still some trade-offs. 
 
@@ -146,7 +146,7 @@ Now, the fine point here of course is: "Baron Samedit” was discovered by secur
 
 Also, consider this: the bug behind “Baron Samedit” was present in sudo between 2011 and 2021. That’s a long time. So it’s quite possible that someone already knew it existed before 2021, but simply didn’t tell anybody else.
 
-Beyond sudo, a [memory safety vulnerability](https://nvd.nist.gov/vuln/detail/cve-2021-4034) was also discovered in `pkexec`, another sudo-like progam.
+Beyond sudo, a [memory safety vulnerability](https://nvd.nist.gov/vuln/detail/cve-2021-4034) was also discovered in `pkexec`, another sudo-like program.
 
 Note that in real-world attacks, sudo vulnerabilities would usually be combined with exploits in other software. For example, it may be possible to gain limited access on a machine by using an exploit in a webserver. If that machine then has a seriously vulnerable outdated sudo on it that allows an attacker to turn that limited access into full access, what may look like a minor bug in a webserver can turn into a nightmare. I.e. memory safety bugs in sudo have the potential to dramatically amplify the impact of bugs in other pieces of software.
 

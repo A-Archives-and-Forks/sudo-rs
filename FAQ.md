@@ -48,6 +48,19 @@ Even though some people like to say that original sudo is "battle tested", that 
 
 What is correct to say is that the maintainer of sudo, Todd Miller, has been battle tested. He has had the job of maintaining sudo for many years now, either in his spare time or in time graciously donated by his employer. Many millions of people (including tech giants) benefit from this.
 
+## Why did you change *X*?
+
+The aim is to be a drop-in replacement for common use cases, not an exact clone of Todd Miller's sudo. Historical precedence
+in itself is not enough of a reason to prevent changes.
+
+From the start, we haven't implemented features/settings we think should be deprecated or don't actually solve a problem (such as `require_tty`), and have made things the out-of-the-box default if they were enabled in all common packaged versions of sudo, for example `use_pty` and `env_reset`. The criteria we use to evaluate features are documented [here](CONTRIBUTING.md).
+
+We also listen to user feedback. Unsurprisingly, most enhancement requests were about the parts that users interact with the most, for example `--askpass`, `--bell`, `pwfeedback`, `passwd_timeout` and `SUDO_PROMPT` features. Some of these were actually contributed to the sudo-rs project by others. For these features you can find the discussion on our issue tracker.
+
+And if you can't find it, feel free to open an issue!
+
+Note that original sudo also changes things much more frequently than people think. For example, a quick scan through the git history of plugins/sudoers/defaults.c shows: sudo-project/sudo@6a1fe42, sudo-project/sudo@fce45b2, sudo-project/sudo@894daa8, sudo-project/sudo@85fef8b (this one adds an option to allow a user to revert behaviour that changed in an earlier release), sudo-project/sudo@df8f066, sudo-project/sudo@278a8ba. In particularly, in 2023 Todd Miller [enabled `use_pty` by default](https://github.com/sudo-project/sudo/issues/258) in sudo, which was a major change as it directly impacts how programs are executed.
+
 ## If I do `grep unsafe` why do I find hundreds of occurrences?
 
 Because they are necessary.

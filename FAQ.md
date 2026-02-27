@@ -1,5 +1,30 @@
 # Frequently Asked Questions
 
+This document attempts to answer common questions about the sudo-rs project.
+
+- [Who is behind sudo-rs?](#who-is-behind-sudo-rs)
+- [I don't like the command name 'sudo-rs'?](#i-dont-like-the-command-name-sudo-rs)
+- [What will I notice if I start using sudo-rs?](#what-will-i-notice-if-i-start-using-sudo-rs)
+- [What is the advantage of rewriting sudo in Rust?](#what-is-the-advantage-of-rewriting-sudo-in-rust)
+- [Why are you replacing a battle-tested utility?](#why-are-you-replacing-a-battle-tested-utility)
+- [Why did you change *X*?](#why-did-you-change-x)
+- [If I do `grep unsafe` why do I find hundreds of occurrences?](#if-i-do-grep-unsafe-why-do-i-find-hundreds-of-occurrences)
+- [Why did you get rid of the GNU license?](#why-did-you-get-rid-of-the-gnu-license)
+- [What operating systems does sudo-rs support?](#what-operating-systems-does-sudo-rs-support)
+- [Why doesn't sudo-rs insult me when I mistype my password?](#why-doesnt-sudo-rs-insult-me-when-i-mistype-my-password)
+- [Comparisons with other tools](#comparisons-with-other-tools)
+  - [What about doas?](#what-about-doas)
+  - [What about run0?](#what-about-run0)
+- [Are there actual memory safety vulnerabilities in the original sudo?](#are-there-actual-memory-safety-vulnerabilities-in-the-original-sudo)
+- [Are there fewer bugs in sudo-rs?](#are-there-fewer-bugs-in-sudo-rs)
+- [Has sudo-rs been audited?](#has-sudo-rs-been-audited)
+- [Is there a reason to not switch to sudo-rs?](#is-there-a-reason-to-not-switch-to-sudo-rs)
+- [What is the "test framework" all about?](#what-is-the-test-framework-all-about)
+- [How is the original sudo developer involved in your project?](#how-is-the-original-sudo-developer-involved-in-your-project)
+- [How did sudo-rs development affect original sudo?](#how-did-sudo-rs-development-affect-original-sudo)
+- [Do you participate in a bug bounty program?](#do-you-participate-in-a-bug-bounty-program)
+- [Can I contribute to sudo-rs?](#can-i-contribute-to-sudo-rs)
+
 ## Who is behind sudo-rs?
 
 Sudo-rs was originally started as a project by [ISRG](https://www.memorysafety.org), run by [Tweede golf](https://www.tweedegolf.com) and [Ferrous Systems](https://www.ferrous-systems.de). At this point in time it is owned and maintained by the non-profit [Trifecta Tech Foundation](https://trifectatech.org).

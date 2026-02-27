@@ -237,7 +237,9 @@ We have collaborated on vulnerabilities that required mitigations from both of u
 
 ## How did sudo-rs development affect original sudo?
 
-During the development of our testing framework, we exercised some code paths in original sudo that were rarely used, and (not surprisingly), several bugs were discovered that way; most of which had a no or only a slight security impact. This also furthered the harmonization between sudo-rs and sudo on their common feature set.
+During the development of our testing framework, we exercised some code paths in original sudo that were rarely used, and (not surprisingly), several bugs were discovered that way; most of which had a no or only a slight security impact.
+We reported these to Todd who promptly fixed them.
+This also furthered the harmonization between sudo-rs and sudo on their common feature set.
 
 Bugs fixed in sudo 1.9.14:
 
@@ -267,6 +269,9 @@ Bugs fixed in sudo 1.9.18:
 
 * https://github.com/sudo-project/sudo/commit/12724d1b73d6d7dd3197ceadefdd9e600fcda537
 * https://github.com/sudo-project/sudo/commit/e2a2982153a39eb793adfc9f2a8524adfdae8c6f
+* https://github.com/sudo-project/sudo/commit/526677d016c451e032041b9487051b881839844c
+* https://github.com/sudo-project/sudo/commit/bcbaca6f69c68a9c249fed96514889a9cc886048
+* https://github.com/sudo-project/sudo/commit/59f6eceb17ca1996260881f2128a339dd2e7ed3d
 
 Time permitting, we would also like to contribute our improvements to the Linux seccomp-based `NOEXEC` mechanism back to the sudo project.
 

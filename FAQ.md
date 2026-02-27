@@ -1,5 +1,30 @@
 # Frequently Asked Questions
 
+This document attempts to answer common questions about the sudo-rs project.
+
+- [Who is behind sudo-rs?](#who-is-behind-sudo-rs)
+- [I don't like the command name 'sudo-rs'?](#i-dont-like-the-command-name-sudo-rs)
+- [What will I notice if I start using sudo-rs?](#what-will-i-notice-if-i-start-using-sudo-rs)
+- [What is the advantage of rewriting sudo in Rust?](#what-is-the-advantage-of-rewriting-sudo-in-rust)
+- [Why are you replacing a battle-tested utility?](#why-are-you-replacing-a-battle-tested-utility)
+- [Why did you change *X*?](#why-did-you-change-x)
+- [If I do `grep unsafe` why do I find hundreds of occurrences?](#if-i-do-grep-unsafe-why-do-i-find-hundreds-of-occurrences)
+- [Why did you get rid of the GNU license?](#why-did-you-get-rid-of-the-gnu-license)
+- [What operating systems does sudo-rs support?](#what-operating-systems-does-sudo-rs-support)
+- [Why doesn't sudo-rs insult me when I mistype my password?](#why-doesnt-sudo-rs-insult-me-when-i-mistype-my-password)
+- [Comparisons with other tools](#comparisons-with-other-tools)
+  - [What about doas?](#what-about-doas)
+  - [What about run0?](#what-about-run0)
+- [Are there actual memory safety vulnerabilities in the original sudo?](#are-there-actual-memory-safety-vulnerabilities-in-the-original-sudo)
+- [Are there fewer bugs in sudo-rs?](#are-there-fewer-bugs-in-sudo-rs)
+- [Has sudo-rs been audited?](#has-sudo-rs-been-audited)
+- [Is there a reason to not switch to sudo-rs?](#is-there-a-reason-to-not-switch-to-sudo-rs)
+- [What is the "test framework" all about?](#what-is-the-test-framework-all-about)
+- [How is the original sudo developer involved in your project?](#how-is-the-original-sudo-developer-involved-in-your-project)
+- [How did sudo-rs development affect original sudo?](#how-did-sudo-rs-development-affect-original-sudo)
+- [Do you participate in a bug bounty program?](#do-you-participate-in-a-bug-bounty-program)
+- [Can I contribute to sudo-rs?](#can-i-contribute-to-sudo-rs)
+
 ## Who is behind sudo-rs?
 
 Sudo-rs was originally started as a project by [ISRG](https://www.memorysafety.org), run by [Tweede golf](https://www.tweedegolf.com) and [Ferrous Systems](https://www.ferrous-systems.de). At this point in time it is owned and maintained by the non-profit [Trifecta Tech Foundation](https://trifectatech.org).
@@ -30,7 +55,7 @@ In most cases, not that much. Your password prompt will look differently.
 
 In other cases, if you have crafted a very specialized configuration, you may notice that some features are missing. This can be by design (e.g. we do not want sudo-rs to send email, or initiate any form of network connection), or simply an oversight. This should not happen with default configurations, so if this happens to you, you should have good chance of diagnosing the change necessary.
 
-If you think we are missing a feature that is not on our roadmap, or that we should prioritise higher, *do* file a feature request on our GitHub page!
+If you think we are missing a feature that is not on our roadmap, or that we should priorities higher, *do* file a feature request on our GitHub page!
 
 ## What is the advantage of rewriting sudo in Rust?
 
@@ -40,13 +65,26 @@ The reasons that were mentioned in the [blog post](https://tweedegolf.nl/en/blog
 
 2. Rust can be used as a systems language, like C, but it also facilitates programming at a much higher level of abstraction. For example, parts of the business logic of sudo-rs are implemented using `enum` types, and evaluated by chaining Rust "iterators" together. And of course our entire code base leans into the ease-of-use offered by `Option` and `Result` types. To achieve the same thing in C, a programmer would need to explicitly implement the logic underpinning those concept themselves. (Which is what you will find that original sudo has done---and that added complexity is where bugs can thrive).
 
-3. A rewrite is also a good time for a rethink. As in every realistic piece of software, there are many many code paths in original sudo [that are seldom exercised](https://www.stratascale.com/vulnerability-alert-CVE-2025-32463-sudo-chroot) in normal usage. Bugs can lurk there as well, undiscovered for years until someone takes a look. But, if some code paths are seldomly executed, why include them at all? This of course is the lesson that OpenBSD's `doas` teaches us.
+3. A rewrite is also a good time for a rethink. As in every realistic piece of software, there are many many code paths in original sudo [that are seldom exercised](https://www.stratascale.com/vulnerability-alert-CVE-2025-32463-sudo-chroot) in normal usage. Bugs can lurk there as well, undiscovered for years until someone takes a look. But, if some code paths are seldom executed, why include them at all? This of course is the lesson that OpenBSD's `doas` teaches us.
 
 ## Why are you replacing a battle-tested utility?
 
 Even though some people like to say that original sudo is "battle tested", that is only true for the most common usage scenarios. You can also say that COBOL is battle tested technology. And since sudo-rs is in fact a derived work of 'original' sudo, we also benefit from the "battle tested"-ness of the original. For example, we have [studied the past CVE's](https://github.com/trifectatechfoundation/sudo-rs/blob/main/docs/sudo-cve.md) so we don't fall prey to them.
 
 What is correct to say is that the maintainer of sudo, Todd Miller, has been battle tested. He has had the job of maintaining sudo for many years now, either in his spare time or in time graciously donated by his employer. Many millions of people (including tech giants) benefit from this.
+
+## Why did you change *X*?
+
+The aim is to be a drop-in replacement for common use cases, not an exact clone of Todd Miller's sudo. Historical precedence
+in itself is not enough of a reason to prevent changes.
+
+From the start, we haven't implemented features/settings we think should be deprecated or don't actually solve a problem (such as `require_tty`), and have made things the out-of-the-box default if they were enabled in all common packaged versions of sudo, for example `use_pty` and `env_reset`. The criteria we use to evaluate features are documented [here](CONTRIBUTING.md).
+
+We also listen to user feedback. Unsurprisingly, most enhancement requests were about the parts that users interact with the most, for example `--askpass`, `--bell`, `pwfeedback`, `passwd_timeout` and `SUDO_PROMPT` features. Some of these were actually contributed to the sudo-rs project by others. For these features you can find the discussion on our issue tracker.
+
+And if you can't find it, feel free to open an issue!
+
+Note that original sudo also changes things much more frequently than people think. For example, a quick scan through the git history of plugins/sudoers/defaults.c shows: sudo-project/sudo@6a1fe42, sudo-project/sudo@fce45b2, sudo-project/sudo@894daa8, sudo-project/sudo@85fef8b (this one adds an option to allow a user to revert behaviour that changed in an earlier release), sudo-project/sudo@df8f066, sudo-project/sudo@278a8ba. In particularly, in 2023 Todd Miller [enabled `use_pty` by default](https://github.com/sudo-project/sudo/issues/258) in sudo, which was a major change as it directly impacts how programs are executed.
 
 ## If I do `grep unsafe` why do I find hundreds of occurrences?
 
@@ -114,7 +152,7 @@ On Linux, it is available as the OpenDoas port, which requires quite a bit of gl
 
 OpenDoas also has one unresolved CVE related to TTY hijacking for 2 years (https://nvd.nist.gov/vuln/search/results?query=opendoas) for which a remedy isn't easy (https://github.com/Duncaen/OpenDoas/issues/106). This is an attack scenario that sudo-rs, like sudo, util-linux's su and systemd's run0 have remedies for (and have had to spent substantial effort in "getting things right"). It's also clear that *at the time of writing* OpenDoas is not that actively maintained (https://github.com/Duncaen/OpenDoas/pull/124).
 
-That being said, we admire the minimalist approach exemplified by doas, and this is expressed by what we internally call our "Berlin Criteria" in our contributing guidelines.
+That being said, we admire the minimalist approach exemplified by doas, and this is expressed by what we internally call our "Berlin Criteria" in our [contributing guidelines](CONTRIBUTING.md).
 
 If we zoom in on a line-for-line comparison, how does sudo-rs compare to OpenDoas' ~5000 lines of C code? sudo-rs is around 40.000 lines of Rust code. Of those, 25.000 lines are test code, which leaves around 15.000 lines of production code. Of those, less than 350 are "unsafe". If we compare both to original sudo, we find that it contains over 180.000 lines of C. So on this spectrum, it is much closer to doas than to original sudo.
 
@@ -136,6 +174,8 @@ However, there are still some trade-offs.
 
 - sudo-rs can more easily be ported to other platforms -- see our port for FreeBSD.
 
+- run0 does not have `sudoedit`
+
 ## Are there actual memory safety vulnerabilities in the original sudo?
 
 Serious vulnerabilities in sudo are listed by the developer of C-based sudo, Todd Miller, on https://www.sudo.ws/security/advisories/. The first page lists several memory safety vulnerabilities (anything that says “buffer overflow”, “heap overflow" or “double free”). One of the oldest ones we know of is from 2001, published in Phrack https://phrack.org/issues/57/8 under the whimsical name “Vudo”, which quite dramatically showed an attacker gaining full access on a system that it only had limited access to.
@@ -148,7 +188,7 @@ Also, consider this: the bug behind “Baron Samedit” was present in sudo betw
 
 Beyond sudo, a [memory safety vulnerability](https://nvd.nist.gov/vuln/detail/cve-2021-4034) was also discovered in `pkexec`, another sudo-like program.
 
-Note that in real-world attacks, sudo vulnerabilities would usually be combined with exploits in other software. For example, it may be possible to gain limited access on a machine by using an exploit in a webserver. If that machine then has a seriously vulnerable outdated sudo on it that allows an attacker to turn that limited access into full access, what may look like a minor bug in a webserver can turn into a nightmare. I.e. memory safety bugs in sudo have the potential to dramatically amplify the impact of bugs in other pieces of software.
+Note that in real-world attacks, sudo vulnerabilities would usually be combined with exploits in other software. For example, it may be possible to gain limited access on a machine by using an exploit in a web server. If that machine then has a seriously vulnerable outdated sudo on it that allows an attacker to turn that limited access into full access, what may look like a minor bug in a webserver can turn into a nightmare. I.e. memory safety bugs in sudo have the potential to dramatically amplify the impact of bugs in other pieces of software.
 
 ## Are there fewer bugs in sudo-rs?
 
@@ -162,7 +202,7 @@ Most of the bugs we are talking about here as so small that no ordinary user wil
 
 This is all talking about simple *bugs*. For vulnerabilities, we dare to give a bolder answer. Sudo-rs uses a memory safe-by-design approach with the aim of dramatically lowering the risk of a memory safety bug. For original sudo, this risk is only reduced compared to other C projects because it has been around for a long time. We expect the probability of a memory safety vulnerability to be discovered in sudo-rs to be dramatically small---especially because we know which parts of the code they could be hiding in. And to this day, none have been found.
 
-For non-memory safety related vulnerabilities, we rely on our reduced feature set. Two recent CVE's in original sudo, [CVE-2025-32463](https://www.sudo.ws/security/advisories/chroot_bug/) and [ CVE-2025-32462](https://www.sudo.ws/security/advisories/host_any/) did not affect sudo-rs because of this reason. Secondly, because Rust allows describing the "business logic" in a more humanly readable way than C, it would also have been highly unlikely that we would have been suspectible to [CVE-2023-22809](https://www.sudo.ws/security/advisories/sudoedit_any/).
+For non-memory safety related vulnerabilities, we rely on our reduced feature set. Two recent CVE's in original sudo, [CVE-2025-32463](https://www.sudo.ws/security/advisories/chroot_bug/) and [ CVE-2025-32462](https://www.sudo.ws/security/advisories/host_any/) did not affect sudo-rs because of this reason. Secondly, because Rust allows describing the "business logic" in a more humanly readable way than C, it would also have been highly unlikely that we would have been susceptible to [CVE-2023-22809](https://www.sudo.ws/security/advisories/sudoedit_any/).
 
 ## Has sudo-rs been audited?
 
@@ -188,7 +228,7 @@ For details you can read the blog by sudo-rs engineer Jorge Aparicio: https://fe
 
 ## How is the original sudo developer involved in your project?
 
-Todd Miller is not part of the sudo-rs team, but he has collaborated with us and has frequently served as an advisor. For example, whenever we discovered behaviour
+Todd Miller is not part of the sudo-rs team, but he has collaborated with us and has frequently served as an adviser. For example, whenever we discovered behaviour
 in original sudo and were not sure whether to copy this or not, he would [chime in](https://github.com/trifectatechfoundation/sudo-rs/issues/427#issuecomment-1589619556)
 with useful advice.
 
@@ -197,7 +237,9 @@ We have collaborated on vulnerabilities that required mitigations from both of u
 
 ## How did sudo-rs development affect original sudo?
 
-During the development of our testing framework, we exercised some code paths in original sudo that were rarely used, and (not surprisingly), several bugs were discovered that way; most of which had a no or only a slight security impact. This also furthered the harmonization between sudo-rs and sudo on their common feature set.
+During the development of our testing framework, we exercised some code paths in original sudo that were rarely used, and (not surprisingly), several bugs were discovered that way; most of which had a no or only a slight security impact.
+We reported these to Todd who promptly fixed them.
+This also furthered the harmonization between sudo-rs and sudo on their common feature set.
 
 Bugs fixed in sudo 1.9.14:
 
@@ -227,6 +269,9 @@ Bugs fixed in sudo 1.9.18:
 
 * https://github.com/sudo-project/sudo/commit/12724d1b73d6d7dd3197ceadefdd9e600fcda537
 * https://github.com/sudo-project/sudo/commit/e2a2982153a39eb793adfc9f2a8524adfdae8c6f
+* https://github.com/sudo-project/sudo/commit/526677d016c451e032041b9487051b881839844c
+* https://github.com/sudo-project/sudo/commit/bcbaca6f69c68a9c249fed96514889a9cc886048
+* https://github.com/sudo-project/sudo/commit/59f6eceb17ca1996260881f2128a339dd2e7ed3d
 
 Time permitting, we would also like to contribute our improvements to the Linux seccomp-based `NOEXEC` mechanism back to the sudo project.
 

@@ -326,6 +326,23 @@ fn permission_test() {
     // list
     pass!(["ALL ALL=(ALL:ALL) /bin/ls, list"], "user" => root(), "server"; "list");
     FAIL!(["ALL ALL=(ALL:ALL) ALL, !list"], "user" => root(), "server"; "list");
+
+    // line continuation
+    pass!(["user ALL=/bin/hello \\", "arg"], "user" => root(), "server"; "/bin/hello arg");
+    pass!(["user ALL=/bin/hello \\", "arg1 \\", "arg2"], "user" => root(), "server"; "/bin/hello arg1 arg2");
+    pass!(
+        ["user ALL=(root) NOPASSWD: /usr/bin/true \\", "arg1 \\", "arg2"],
+        "user" => root(), "server";
+        "/usr/bin/true arg1 arg2" => [authenticate: Authenticate::Nopasswd]
+    );
+    pass!(["user ALL=/bin/hello\\", "arg"], "user" => root(), "server"; "/bin/hello arg");
+    pass!(
+        ["user ALL=/bin/hello \\", "\\", "arg"],
+        "user" => root(), "server";
+        "/bin/hello arg"
+    );
+    SYNTAX!(["us\\\ner ALL=ALL"]);
+    SYNTAX!(["user ALL=/bin/hello\\"]);
 }
 
 #[test]
